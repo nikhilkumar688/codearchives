@@ -333,13 +333,569 @@ int main() {
 }
 
     </pre>
-<h1>IPC client</h1>
+	    
+<h1>addrev server</h1>
     <pre>
+includestdio.h
+includestdlib.h
+includeunistd.h
+includestring.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+define MAXLINE 100
+define SERV_PORT 5999
+int main()
+{
+	int server,client,n;
+	int num1,num2,sum,rev=0;
+	ssize_t nread;
+	struct sockaddr_in servaddr,cliaddr;
+	socklen_t clilen;
+	server=socket(AF_INET,SOCK_STREAM,0);
+	if(server<0){
+		perror("Socket creation failed...\n");
+		exit(0);
+	}
+	bzero(&servaddr,sizeof(servaddr));
+	servaddr.sin_family=AF_INET;
+	servaddr.sin_port=htons(SERV_PORT);
+	servaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	if(bind(server,(struct sockaddr*)&servaddr,sizeof(servaddr))<0){
+		perror("Bind failed...\n");
+		exit(0);
+	}
+	if(listen(server,1),0){
+		perror("Listen failed...\n");
+		exit(0);
+	}
+	printf("Server is listening on port %d ...",SERV_PORT);
+	while(1)
+	{
+		clilen=sizeof(cliaddr);
+		client=accept(server,(struct sockaddr*)&cliaddr,&clilen);
+		if(client<0){
+			perror("accept failed...\n");
+			continue;
+		}
+		nread=read(client,&num1,sizeof(num1));
+		if(nread<0){
+			perror("Failed to read first number...\n");
+			close(client);
+			continue;
+		}
+		nread=read(client,&num2,sizeof(num2));
+		if(nread<0){
+			perror("Failed to read second number ...\n");
+			close(client);
+			continue;
+		}
+		sum=num1+num2;
+		int temp_sum=sum;
+		rev=0;
+		while(temp_sum!=0){
+			rev=rev*10+temp_sum%10;
+			temp_sum/=10;
+		}
+		write(client,&sum,sizeof(sum));
+		write(client,&rev,sizeof(rev));
+		printf("Sent sum : %d\n",sum);
+		printf("Sent rev : %d\n",rev);
+		close(client);
+	}
+}
+    </pre>
+	    
+<h1>addrev client</h1>
+    <pre>
+includestdio.h
+includestdlib.h
+includeunistd.h
+includestring.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+define MAXLINE 100
+define SERV_PORT 5999
+int main()
+{
+	int server;
+	int num1,num2,sum,rev;
+	ssize_t n;
+	struct sockaddr_in servaddr;
+	socklen_t clilen;
+	server=socket(AF_INET,SOCK_STREAM,0);
+	if(server<0){
+		perror("Socket creation failed...\n");
+		exit(0);
+	}
+	bzero(&servaddr,sizeof(servaddr));
+	servaddr.sin_family=AF_INET;
+	servaddr.sin_port=htons(SERV_PORT);
+	servaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	if(connect(server,(struct sockaddr*)&servaddr,sizeof(servaddr))<0){
+		perror("connect failed...\n");
+		exit(0);
+	}
+	printf("Enter the first integer\n");
+	scanf("%d",&num1);
+	printf("Enter the secong integer\n");
+	scanf("%d",&num2);
+	if(write(server,&num1,sizeof(num1))<0){
+		perror("Num 1 Sent failed");
+		close(server);
+		exit(1);
+	}
+	if(write(server,&num2,sizeof(num2))<0){
+		perror("Num 2 Sent failed");
+		close(server);
+		exit(1);
+	}
+	if((n=read(server,&sum,sizeof(sum)))<0){
+		perror("Read failed for sum\n");
+		close(server);
+		exit(1);
+	}
+	if((n=read(server,&rev,sizeof(rev)))<0){
+		perror("Read failed for rev\n");
+		close(server);
+		exit(1);
+	}	
+	printf("The sum of %d and %d = %d",num1,num2,sum);
+	printf("The reverse of sum %d = %d",sum,rev);
+	close(server);
+	return 0;
+}
+    </pre>
+			
+<h1>UDP message passing server</h1>
+    <pre>
+includestdio.h
+includestdlib.h
+includeunistd.h
+includestring.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+int main(){
+	int server,servlen;
+	char sour[200],dest[200];
+	struct sockaddr_in servaddr;
+	server=socket(AF_INET,SOCK_DGRAM,0);
+	servlen=sizeof(servaddr);
+	servaddr.sin_family=AF_INET;
+	servaddr.sin_port=8001;
+	servaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	bind(server,(struct sockaddr*)&servaddr,servlen);
+	printf("\nServer is listening on port 8001...\n");
+	while(1){
+		recvfrom(server,&sour,sizeof(sour),0,(struct sockaddr*)&servaddr,&servlen);
+		printf("\nMessage from client is ::%s",sour);
+		printf("Enter the message for client ::\n");
+		fgets(dest,sizeof(dest),stdin);
+		sendto(server,&dest,sizeof(dest),0,(struct sockaddr*)&servaddr,servlen);
+		
+	}
+	close(server);
+	return 0;
+}
 
     </pre>
-<h1>IPC client</h1>
+			
+<h1>UDP message passing client</h1>
     <pre>
+includestdio.h
+includestdlib.h
+includeunistd.h
+includestring.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+int main(){
+	int server,servlen;
+	char sour[200],dest[200];
+	struct sockaddr_in servaddr;
+	server=socket(AF_INET,SOCK_DGRAM,0);
+	servlen=sizeof(servaddr);
+	servaddr.sin_family=AF_INET;
+	servaddr.sin_port=8001;
+	servaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	bind(server,(struct sockaddr*)&servaddr,servlen);
+	printf("\nServer is listening on port 8001...\n");
+	while(1){
+		printf("Enter the message for server ::\n");
+		fgets(sour,sizeof(sour),stdin);
+		sendto(server,&sour,sizeof(sour),0,(struct sockaddr*)&servaddr,servlen);
+		recvfrom(server,&dest,sizeof(dest),0,(struct sockaddr*)&servaddr,&servlen);
+		printf("\nMessage from server is ::%s",dest);
+		
+		
+	}
+	close(server);
+	return 0;
+}
 
     </pre>
+
+<h1>UDP sum rev server</h1>
+    <pre>
+includestdio.h
+includestdlib.h
+includestring.h
+includeunistd.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+int main(){
+	int server,servlen;
+	int num1,num2,sum,rev=0;
+	struct sockaddr_in servaddr;
+	server=socket(AF_INET,SOCK_DGRAM,0);
+	servaddr.sin_family=AF_INET;
+	servaddr.sin_port=htons(8008);
+	servaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	servlen=sizeof(servaddr);
+	bind(server,(struct sockaddr*)&servaddr,servlen);
+	printf("\nServer is listening on port 8008\n");
+	while(1){
+		recvfrom(server,&num1,sizeof(num1),0,(struct sockaddr*)&servaddr,&servlen);
+		recvfrom(server,&num2,sizeof(num2),0,(struct sockaddr*)&servaddr,&servlen);
+		sum=num1+num2;
+		int temp_sum=sum;
+		while(temp_sum!=0){
+			rev=rev*10+temp_sum%10;
+			temp_sum/=10;
+		}
+		sendto(server,&sum,sizeof(sum),0,(struct sockaddr*)&servaddr,servlen);
+		sendto(server,&rev,sizeof(rev),0,(struct sockaddr*)&servaddr,servlen);
+	}
+	close(server);
+	return 0;
+}
+    </pre>
+
+<h1>UDP sum rev client</h1>
+    <pre>
+includestdio.h
+includestdlib.h
+includestring.h
+includeunistd.h
+includesys/socket.h
+includesys/types.h
+includearpa/inet.h
+includenetinet/in.h
+int main(){
+	int server,clilen;
+	int num1,num2,sum,rev;
+	struct sockaddr_in cliaddr;
+	server=socket(AF_INET,SOCK_DGRAM,0);
+	cliaddr.sin_family=AF_INET;
+	cliaddr.sin_port=htons(8008);
+	cliaddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	clilen=sizeof(cliaddr);
+	bind(server,(struct sockaddr*)&cliaddr,clilen);
+	printf("\nClient is listening on port 8008\n");
+	while(1){
+		printf("\nEnter the first number ::\n");
+		scanf("%d",&num1);
+		printf("\nEnter the second number ::\n");
+		scanf("%d",&num2);
+		sendto(server,&num1,sizeof(num1),0,(struct sockaddr*)&cliaddr,clilen);
+		sendto(server,&num2,sizeof(num2),0,(struct sockaddr*)&cliaddr,clilen);		
+		recvfrom(server,&sum,sizeof(sum),0,(struct sockaddr*)&cliaddr,&clilen);
+		recvfrom(server,&rev,sizeof(rev),0,(struct sockaddr*)&cliaddr,&clilen);		
+		printf("\nThe sum of %d And %d = %d\n",num1,num2,sum);
+		printf("\nReverse of Sum %d is %d\n",sum,rev);
+		
+	}
+	close(server);
+	return 0;
+}
+    </pre>
+
+<h1>CRC CHECK</h1>
+    <pre>
+include stdio.h
+
+define MAX 100
+
+void xor(int* dividend, int* divisor, int pos, int div_len) {
+    for (int i = 0; i < div_len; i++) {
+        dividend[pos + i] = dividend[pos + i] ^ divisor[i]; // XOR bitwise
+    }
+}
+
+// Function to perform CRC division and return remainder bits in 'temp' array itself
+void crc_division(int* input, int input_len, int* divisor, int div_len) {
+    for (int i = 0; i <= input_len - div_len; i++) {
+        if (input[i] == 1) {
+            xor(input, divisor, i, div_len);
+        }
+    }
+}
+
+int main() {
+    int data[MAX], divisor[MAX], temp[MAX];
+    int data_len, div_len, total_len;
+
+    printf("Enter the length of data bits: ");
+    scanf("%d", &data_len);
+
+    printf("Enter the data bits (0 or 1): ");
+    for (int i = 0; i < data_len; i++) {
+        scanf("%d", &data[i]);
+    }
+
+    printf("Enter the length of divisor bits: ");
+    scanf("%d", &div_len);
+
+    printf("Enter the divisor bits (0 or 1): ");
+    for (int i = 0; i < div_len; i++) {
+        scanf("%d", &divisor[i]);
+    }
+
+    // Append zeros to data
+    total_len = data_len + div_len - 1;
+    for (int i = 0; i < data_len; i++) {
+        temp[i] = data[i];
+    }
+    for (int i = data_len; i < total_len; i++) {
+        temp[i] = 0;
+    }
+
+    // Calculate CRC remainder
+    crc_division(temp, total_len, divisor, div_len);
+
+    // Print the CRC remainder
+    printf("Remainder (CRC): ");
+    for (int i = data_len; i < total_len; i++) {
+        printf("%d", temp[i]);
+    }
+    printf("\n");
+
+    // Print the transmitted codeword (data + CRC)
+    printf("Transmitted codeword: ");
+    for (int i = 0; i < data_len; i++) {
+        printf("%d", data[i]);
+    }
+    for (int i = data_len; i < total_len; i++) {
+        printf("%d", temp[i]);
+    }
+    printf("\n");
+
+    // --- Receiver Side: check for errors ---
+
+    int received[MAX];
+    printf("Enter received codeword bits (length %d): ", total_len);
+    for (int i = 0; i < total_len; i++) {
+        scanf("%d", &received[i]);
+    }
+
+    // Copy received codeword into temp array for checking
+    for (int i = 0; i < total_len; i++) {
+        temp[i] = received[i];
+    }
+
+    // Perform CRC division on received codeword
+    crc_division(temp, total_len, divisor, div_len);
+
+    // Check remainder bits after division
+    int error = 0;
+    for (int i = data_len; i < total_len; i++) {
+        if (temp[i] != 0) {
+            error = 1;  // Error detected
+            break;
+        }
+    }
+
+    if (error) {
+        printf("Error detected in received codeword!\n");
+    } else {
+        printf("No error detected. Received codeword is correct.\n");
+    }
+
+    return 0;
+}
+
+    </pre>
+
+<h1>stop and wait</h1>
+    <pre>
+include stdio.h
+include stdlib.h
+
+int main() {
+    int i, noframes;
+    int randomValue;
+
+    // Initialize random number generator
+    srand(0);  // You can change this seed to get different results
+
+    // Generate a small number of frames to send
+    noframes = rand() % 5 + 3;  // between 3 and 7 frames
+    printf("Total frames to send: %d\n\n", noframes);
+
+    for (i = 1; i <= noframes; ) {
+        printf("Sending frame %d...\n", i);
+
+        // Simulate random behavior: 0 means success, 1 means timeout
+        randomValue = rand() % 2;
+
+        if (randomValue == 0) {
+            printf("ACK received for frame %d ?\n\n", i);
+            i++;  // Move to next frame
+        } else {
+            printf("Timeout! Resending frame %d ??\n\n", i);
+            // Stay on same frame
+        }
+    }
+
+    printf("All frames sent successfully using Stop-and-Wait Protocol! ??\n");
+
+    return 0;
+}
+
+    </pre>
+
+<h1>Rsa algorithm</h1>
+    <pre>
+includestdio.h
+includestdlib.h
+includemath.h
+includestring.h
+long int p,q,n,t,flag,e[100],d[100],temp[100],j,m[100],en[100],i;
+char msg[100];
+int prime(long int);
+void ce();
+long int cd(long int);
+void encrypt();
+void decrypt();
+int main()
+{
+printf("ENTER FIRST PRIME NUMBER: ");
+scanf("%ld",&p);
+flag=prime(p);
+if(flag==0||p==1)
+{
+printf("Wrong Input\n");
+exit(1);
+}
+printf("ENTER ANOTHER PRIME NUMBER: ");
+scanf("%ld",&q);
+flag=prime(q);
+if(flag==0||q==1||p==q)
+{
+printf("Wrong Input");
+exit(1);
+}
+printf("Enter message: ");
+scanf(" %[^\n]s",msg);
+for(i=0;i<strlen(msg);i++)
+m[i]=msg[i];
+n=p*q;
+t=(p-1)*(q-1);
+ce();
+encrypt();
+decrypt();
+return 0;
+}
+int prime(long int pr)
+{
+int i;
+if(pr==1)
+return 0;
+for(i=2;i<=sqrt(pr);i++)
+{
+if(pr%i==0)
+return 0;
+}
+return 1;
+}
+void ce()
+{
+int k;
+k=0;
+for(i=2;i<t;i++){
+if(t%i==0)
+continue;
+flag=prime(i);
+if(flag==1&&i!=p&&i!=q)
+{
+e[k]=i;
+flag=cd(e[k]);
+if(flag>0)
+{
+d[k]=flag;
+k++;
+}
+if(k==99)
+break;
+}
+}
+}
+long int cd(long int x)
+{
+long int k=1;
+while(1)
+{
+k=k+t;
+if(k%x==0)
+return(k/x);
+}
+}
+void encrypt()
+{
+long int pt,ct,key=e[0],k,len;
+i=0;
+len=strlen(msg);
+while(i<len)
+{
+pt=m[i];
+pt=pt-96;
+k=1;
+for(j=0;j<key;j++)
+{
+k=k*pt;
+k=k%n;
+}
+temp[i]=k;
+ct=k+96;
+en[i]=ct;
+i++;
+}
+en[i]=-1;
+printf("\n THE ENCRYPTED MESSAGE IS :\n");
+for(i=0;en[i]!=-1;i++)
+printf("%c",(char)en[i]);
+}
+void decrypt()
+{
+long int pt,ct,key=d[0],k;
+i=0;
+while(en[i]!=-1)
+{
+ct=temp[i];
+k=1;
+for(j=0;j<key;j++)
+{
+k=k*ct;
+k=k%n;
+}
+pt=k+96;
+m[i]=pt;
+i++;
+}
+m[i]=-1;
+printf("\nTHE DECRYPTED MESSAGE IS : \n");
+for(i=0;m[i]!=-1;i++)
+printf("%c",(char)m[i]);
+}
+    </pre>
+
 </body>
 </html>
