@@ -795,7 +795,7 @@ exit(1);
 }
 printf("Enter message: ");
 scanf(" %[^\n]s",msg);
-for(i=0;i<strlen(msg);i++)
+for(i=0;i strlen(msg);i++)
 m[i]=msg[i];
 n=p*q;
 t=(p-1)*(q-1);
@@ -853,12 +853,12 @@ void encrypt()
 long int pt,ct,key=e[0],k,len;
 i=0;
 len=strlen(msg);
-while(i<len)
+while(i len)
 {
 pt=m[i];
 pt=pt-96;
 k=1;
-for(j=0;j<key;j++)
+for(j=0;j key;j++)
 {
 k=k*pt;
 k=k%n;
@@ -881,7 +881,7 @@ while(en[i]!=-1)
 {
 ct=temp[i];
 k=1;
-for(j=0;j<key;j++)
+for(j=0;j key;j++)
 {
 k=k*ct;
 k=k%n;
