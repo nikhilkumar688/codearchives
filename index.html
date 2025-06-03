@@ -95,6 +95,109 @@ if(msgsnd(qid,&send,len,0)==-1){
 }
     </pre>
   
+    <h1>TCP message passing server</h1>
+    <pre>
+includestdio.h
+includeunistd.h
+includestring.h
+includestdlib.h
+includesys/socket.h
+includearpa/inet.h
+
+int main(){
+	int serv_sockfd, cli_sockfd;
+	int serv_len, cli_len;
+	struct sockaddr_in serv_address, cli_addr;
+	char a[100], b[100];
+
+	serv_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (serv_sockfd < 0) {
+		perror("Socket creation failed");
+		exit(1);
+	}
+
+	memset(&serv_address, 0, sizeof(serv_address));
+	serv_address.sin_family = AF_INET;
+	serv_address.sin_port = htons(9001);
+	serv_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	serv_len = sizeof(serv_address);
+	if (bind(serv_sockfd, (struct sockaddr*)&serv_address, serv_len) < 0) {
+		perror("Bind failed");
+		exit(1);
+	}
+
+	listen(serv_sockfd, 5);
+
+	while(1){
+		printf("Server is waiting...\n");
+		cli_len = sizeof(cli_addr);
+		cli_sockfd = accept(serv_sockfd, (struct sockaddr*)&cli_addr, &cli_len);
+		if (cli_sockfd < 0) {
+			perror("Accept failed");
+			continue;
+		}
+
+		read(cli_sockfd, a, sizeof(a));
+		printf("Reading message from client: ");
+		puts(a);
+
+		printf("Enter message for client: ");
+		fgets(b, sizeof(b), stdin);
+		write(cli_sockfd, b, strlen(b));  // +1 to include null terminator
+
+		close(cli_sockfd);
+	}
+}
+
+    </pre>
+
+    <h1>TCP message passing client</h1>
+    <pre>
+includestdio.h
+includeunistd.h
+includestdlib.h
+includestring.h
+includesys/socket.h
+includearpa/inet.h
+
+int main(){
+	int sockfd, len, result;
+	struct sockaddr_in address;
+	char name[100], scr[100];
+
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) {
+		perror("Socket creation failed");
+		exit(1);
+	}
+
+	memset(&address, 0, sizeof(address));
+	address.sin_family = AF_INET;
+	address.sin_port = htons(9001);
+	address.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	len = sizeof(address);
+	result = connect(sockfd, (struct sockaddr*)&address, len);
+	if(result == -1){
+		perror("Unable to connect");
+		exit(1);
+	}
+
+	printf("\nEnter message: ");
+	fgets(name, sizeof(name), stdin);
+	write(sockfd, name, strlen(name) + 1);  // +1 to include null terminator
+
+	printf("\nMessage from server: ");
+	read(sockfd, scr, sizeof(scr));
+	puts(scr);
+
+	close(sockfd);
+	return 0;
+}
+
+    </pre>
+
     <h1>IPC client</h1>
     <pre>
 
